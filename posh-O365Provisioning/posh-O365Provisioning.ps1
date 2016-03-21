@@ -91,10 +91,6 @@ function New-O365Domain
     }
 }
 
-
-
-
-
 <#
 .Synopsis
    Short description
@@ -141,25 +137,3 @@ function Set-AddressBookPolicyConfig
         Remove-PSSession -Name "ExchangeOnline"
     }
 }
-
-
-
-#$dept = "1st Swavesey Scout Group"
-
-
-#$dept = "1st Willingham Scout Group"
-
-#Connect-MsolService
-#get-msoluser -domainname 1stWillinghamScoutGroup.org.uk | set-msoluser -Department $dept
-#Get-MsolUser -Department $dept
-
-#$rf = "RecipientType -eq 'UserMailbox' -and Department -eq '$dept'"
-#New-EXOAddressList -Name $dept -RecipientFilter "RecipientType -eq 'UserMailbox' -and Department -eq '$dept'" -DisplayName "$dept Address List"
-#New-EXOAddressList -Name "$dept Rooms" -RecipientFilter "RecipientDisplayType -eq 'ConferenceRoomMailbox' -and Department -eq '$dept'"
-#New-EXOGlobalAddressList -Name "$dept GAL" -RecipientFilter "Department -eq '$dept'"
-#New-EXOOfflineAddressBook -Name "$dept OAB" -AddressLists $dept
-#New-EXOAddressBookPolicy -Name "$dept ABP" -AddressLists $dept -OfflineAddressBook "\$dept OAB" -GlobalAddressList "\$dept GAL" -RoomList "\$dept Rooms"
-#Get-EXOMailbox -ResultSize unlimited | Where-Object {$_.ExternalDirectoryObjectId -in (Get-MsolUser | Where-Object {$_.department -eq $dept}).objectid} | Set-EXOMailbox -AddressBookPolicy "$dept ABP"
-
-
-
