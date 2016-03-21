@@ -46,3 +46,120 @@ function New-ExternalForwarder
         Remove-PSSession -Name "ExchangeOnline"
     }
 }
+
+<#
+.Synopsis
+   Adds or Verifies a Domain for a Tennant
+.DESCRIPTION
+   If the domain is not associated with the Tennant the domain is added and the Text entry for the DNS zone is returned, If the Domain exists and is unverifed the domain verification is attempted.
+.EXAMPLE
+   New-o365Domain -domain "contoso.com"
+#>
+function New-O365Domain
+{
+    [CmdletBinding()]
+    Param
+    (
+        # Domain Name to add
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=0)]
+        $domain
+    )
+
+    Begin
+    {
+        Connect-MsolService
+        $txtrecord=@()
+        $domainlist = Get-MsolDomain
+    }
+    Process
+    {   
+        If ($domainlist.name.Contains($domain) -eq $false) {
+            new-msoldomain -Name $domain
+            $txtrecord+=(Get-MsolDomainVerificationDNS -DomainName $domain -mode DnsTxtRecord)
+            $txtrecord | select-object text,label,ttl
+        } else {
+            $addeddomain = Get-MsolDomain -DomainName $domain
+            If ($addeddomain.Status -eq "unverified") {
+                Confirm-MsolDomain -DomainName $domain
+            }
+        }    
+    }                                                                        
+    End
+    {
+    }
+}
+
+
+
+
+
+<#
+.Synopsis
+   Short description
+.DESCRIPTION
+   Long description
+.EXAMPLE
+   Example of how to use this cmdlet
+.EXAMPLE
+   Another example of how to use this cmdlet
+#>
+function Set-AddressBookPolicyConfig
+{
+    [CmdletBinding()]
+    Param
+    (
+        # Group, District or County Name
+        [Parameter(Mandatory=$true,
+                   ValueFromPipelineByPropertyName=$true,
+                   Position=0)]
+        $Department
+    )
+
+    Begin
+    {
+        $UserCredential = Get-Credential
+        $Session = New-PSSession -Name "ExchangeOnline" -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell-liveid/ -Credential $UserCredential -Authentication Basic -AllowRedirection
+        Import-PSSession $Session -Prefix EXO
+    }
+    Process
+    {
+        $transportcfg = Get-EXOTransportConfig
+        If(!$transportcfg.AddressBookPolicyRoutingEnabled){
+            Set-EXOTransportConfig -AddressBookPolicyRoutingEnabled $true
+        }
+        
+        New-EXOAddressList -Name $Department -RecipientFilter "RecipientType -eq 'UserMailbox' -and Department -eq '$Department'" -DisplayName "$Department Address List"
+        New-EXOAddressList -Name "$Department Rooms" -RecipientFilter "RecipientDisplayType -eq 'ConferenceRoomMailbox' -and Department -eq '$Department'"
+        New-EXOGlobalAddressList -Name "$Department GAL" -RecipientFilter "Department -eq '$Department'"
+        New-EXOOfflineAddressBook -Name "$Department OAB" -AddressLists $Department
+        New-EXOAddressBookPolicy -Name "$Department ABP" -AddressLists $Department -OfflineAddressBook "\$Department OAB" -GlobalAddressList "\$Department GAL" -RoomList "\$Department Rooms"
+    }
+    End
+    {
+        Remove-PSSession -Name "ExchangeOnline"
+    }
+}
+
+
+
+#$dept = "1st Swavesey Scout Group"
+
+
+#$dept = "1st Willingham Scout Group"
+
+#Connect-MsolService
+#get-msoluser -domainname 1stWillinghamScoutGroup.org.uk | set-msoluser -Department $dept
+#Get-MsolUser -Department $dept
+
+#$rf = "RecipientType -eq 'UserMailbox' -and Department -eq '$dept'"
+#New-EXOAddressList -Name $dept -RecipientFilter "RecipientType -eq 'UserMailbox' -and Department -eq '$dept'" -DisplayName "$dept Address List"
+#New-EXOAddressList -Name "$dept Rooms" -RecipientFilter "RecipientDisplayType -eq 'ConferenceRoomMailbox' -and Department -eq '$dept'"
+#New-EXOGlobalAddressList -Name "$dept GAL" -RecipientFilter "Department -eq '$dept'"
+#New-EXOOfflineAddressBook -Name "$dept OAB" -AddressLists $dept
+#New-EXOAddressBookPolicy -Name "$dept ABP" -AddressLists $dept -OfflineAddressBook "\$dept OAB" -GlobalAddressList "\$dept GAL" -RoomList "\$dept Rooms"
+#Get-EXOMailbox -ResultSize unlimited | Where-Object {$_.ExternalDirectoryObjectId -in (Get-MsolUser | Where-Object {$_.department -eq $dept}).objectid} | Set-EXOMailbox -AddressBookPolicy "$dept ABP"
+
+
+
